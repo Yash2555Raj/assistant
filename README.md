@@ -1,2 +1,2 @@
-# voiceassistant
+# assistant
 Voice Assistant
