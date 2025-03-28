@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Registration Form</title>
+    <style>
+        body {
+            padding: 20px;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+        }
+        .form-container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 550px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        input[type="text"], input[type="email"], input[type="tel"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+        input.valid {
+            border-color: #28a745;
+        }
+        input.invalid {
+            border-color: #dc3545;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #000000, #0056b3);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #7a7a7a, #7a7a7a);
+            transform: translateY(-2px);
+        }
+        .mic-btn {
+            width: 50px;
+            height: 50px;
+            background: #000000;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            margin: 20px auto 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s ease;
+        }
+        .mic-btn.active {
+            background: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        #status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(220, 53, 69, 0.7); }
+            50% { transform: scale(1.1); box-shadow: 0 0 20px rgba(220, 53, 69, 0.9); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(220, 53, 69, 0.7); }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Enter Your Details</Details></h2>
+        <form id="userForm" onsubmit="return validateForm(event)">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" placeholder="Enter your full name" required>
+            
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" placeholder="Enter 10-digit phone number" maxlength="10" required>
+            
+            <label for="city">City</label>
+            <input type="text" id="city" placeholder="Enter your city" required>
+            
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="Enter your email address" required>
+            
+            <button type="submit" class="submit-btn">Submit</button>
+            <button type="button" class="mic-btn" onclick="toggleMic()" id="micButton">🎙️</button>
+            <div id="status">Tap the microphone to start</div>
+        </form>
+    </div>
+
+<script>
+    let recognition;
+    let isListening = false;
+    let timeoutId = null;
+    const status = document.getElementById('status');
+    const micButton = document.getElementById('micButton');
+
+    function toggleMic() {
+        if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+            alert('Speech recognition is not supported in your browser.');
+            return;
+        }
+
+        if (!isListening) {
+            startRecognition();
+            isListening = true;
+            micButton.classList.add('active');
+            status.textContent = "Listening... Say 'stop' when done.";
+        } else {
+            stopRecognition();
+            isListening = false;
+            micButton.classList.remove('active');
+            status.textContent = "Tap the microphone to start";
+        }
+    }
+
+    function startRecognition() {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+            status.textContent = `Recognized: "${transcript}"`;
+
+            if (transcript.includes("stop")) {
+                stopRecognition();
+                isListening = false;
+                micButton.classList.remove('active');
+                status.textContent = "Tap the microphone to start";
+                processSpeech(transcript.replace("stop", "").trim());
+            } else {
+                processSpeech(transcript);
+                resetTimeout();
+            }
+        };
+
+        recognition.onend = () => {
+            if (isListening) {
+                startRecognition();
+            } else {
+                status.textContent = "Tap the microphone to start";
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            status.textContent = "Error occurred. Please try again.";
+            stopRecognition();
+            isListening = false;
+            micButton.classList.remove('active');
+        };
+
+        recognition.onspeechend = () => {
+            resetTimeout();
+        };
+
+        recognition.start();
+    }
+
+    function stopRecognition() {
+        if (recognition) {
+            recognition.stop();
+            clearTimeout(timeoutId);
+        }
+    }
+
+    // function resetTimeout() {
+    //     clearTimeout(timeoutId);
+    //     timeoutId = setTimeout(() => {
+    //         stopRecognition();
+    //         isListening = false;
+    //         micButton.classList.remove('active');
+    //         status.textContent = "Tap the microphone to start";
+    //     }, 10000);
+    // }
+
+    function resetTimeout() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            stopRecognition();  
+            isListening = false;
+            micButton.classList.remove('active');
+            status.textContent = "Tap the microphone to start";
+        }, 20000); // Increased to 20 seconds
+    }
+
+
+//     function processSpeech(transcript) {
+//     let feedback = [];
+
+//     // Define keyword positions
+//     const nameIndex = transcript.indexOf("my name is");
+//     const phoneIndex = transcript.indexOf("my number is");
+//     const cityIndex = transcript.indexOf("i am from");
+//     const emailIndex = transcript.indexOf("my email is");
+
+//     // Name: After "my name is" until next keyword or end
+//     let name = "";
+//     if (nameIndex !== -1) {
+//         const nextIndex = Math.min(
+//             phoneIndex !== -1 ? phoneIndex : Infinity,
+//             cityIndex !== -1 ? cityIndex : Infinity,
+//             emailIndex !== -1 ? emailIndex : Infinity
+//         );
+//         name = transcript.substring(nameIndex + 10, nextIndex === Infinity ? undefined : nextIndex).trim();
+//         name = name.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+//     }
+//     if (name && name.length >= 2 && /^[a-zA-Z\s]+$/.test(name)) {
+//         document.getElementById('name').value = name;
+//         document.getElementById('name').classList.remove('invalid');
+//         document.getElementById('name').classList.add('valid');
+//         feedback.push(`Name set to ${name}`);
+//     } else if (name) {
+//         document.getElementById('name').classList.add('invalid');
+//         feedback.push("Invalid name. Use letters only, minimum 2 characters.");
+//     }
+
+//     // Phone: After "my number is", extract 10 digits
+//     let phone = "";
+//     if (phoneIndex !== -1) {
+//         const nextIndex = Math.min(
+//             cityIndex !== -1 && cityIndex > phoneIndex ? cityIndex : Infinity,
+//             emailIndex !== -1 && emailIndex > phoneIndex ? emailIndex : Infinity
+//         );
+//         const phoneSegment = transcript.substring(phoneIndex + 12, nextIndex === Infinity ? undefined : nextIndex).trim();
+//         const phoneMatch = phoneSegment.match(/\d+/g);
+//         if (phoneMatch) {
+//             phone = phoneMatch.join("");
+//             if (phone.length > 10) phone = phone.slice(0, 10);
+//         }
+//     }
+//     if (phone && phone.length === 10 && /^\d{10}$/.test(phone)) {
+//         document.getElementById('phone').value = phone;
+//         document.getElementById('phone').classList.remove('invalid');
+//         document.getElementById('phone').classList.add('valid');
+//         feedback.push(`Phone number set to ${phone}`);
+//     } else if (phone) {
+//         document.getElementById('phone').classList.add('invalid');
+//         feedback.push(`Invalid phone number: "${phone}". Must be exactly 10 digits.`);
+//     }
+
+//     // City: After "i am from" until next keyword or end, capitalize first letter of each word
+//     let city = "";
+//     if (cityIndex !== -1) {
+//         const nextIndex = emailIndex !== -1 && emailIndex > cityIndex ? emailIndex : Infinity;
+//         city = transcript.substring(cityIndex + 9, nextIndex === Infinity ? undefined : nextIndex).trim();
+//         city = city.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+//     }
+//     if (city && city.length >= 2 && /^[a-zA-Z\s]+$/.test(city.toLowerCase())) {
+//         document.getElementById('city').value = city;
+//         document.getElementById('city').classList.remove('invalid');
+//         document.getElementById('city').classList.add('valid');
+//         feedback.push(`City set to ${city}`);
+//     } else if (city) {
+//         document.getElementById('city').classList.add('invalid');
+//         feedback.push("Invalid city. Use letters only, minimum 2 characters.");
+//     }
+
+//     // Email: After "my email is" to end
+//     let email = "";
+//     if (emailIndex !== -1) {
+//         email = transcript.substring(emailIndex + 11)
+//             .trim()
+//             .replace(/\s/g, "")
+//             .replace("at", "@")
+//             .replace("dot", ".")
+//             .replace(/\.com.+$/, ".com");
+//     }
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     if (email && emailRegex.test(email)) {
+//         document.getElementById('email').value = email;
+//         document.getElementById('email').classList.remove('invalid');
+//         document.getElementById('email').classList.add('valid');
+//         feedback.push(`Email set to ${email}`);
+//     } else if (email) {
+//         document.getElementById('email').classList.add('invalid');
+//         feedback.push("Invalid email. Must include '@' and a domain.");
+//     }
+
+//     // Provide combined feedback
+//     if (feedback.length > 0) {
+//         speakFeedback(feedback.join(", "));
+//     } else {
+//         status.textContent = "No valid details recognized. Please try again.";
+//         speakFeedback("No valid details recognized. Please try again.");
+//     }
+// }
+
+function processSpeech(transcript) {
+    let feedback = [];
+    console.log("Transcript received:", transcript);
+
+    // Name: Check for name-related phrases
+    let name = "";
+    const namePatterns = [
+        { phrase: "my name is ", offset: 11 },
+        { phrase: " is my name", offset: -11, reverse: true },
+        { phrase: "name is ", offset: 8 },
+        { phrase: "my name’s ", offset: 10 },
+        { phrase: "hi i am ", offset: 8 },
+        { phrase: "hello i am ", offset: 11 },
+        { phrase: "hey there i am ", offset: 15 },
+        { phrase: "i am ", offset: 5, strict: true }, // Strict to avoid "i am from"
+        { phrase: "name ", offset: 5 }
+    ];
+
+    for (const pattern of namePatterns) {
+        const index = pattern.reverse ? transcript.lastIndexOf(pattern.phrase) : transcript.indexOf(pattern.phrase);
+        if (index !== -1) {
+            // Skip "i am" if followed by "from" to avoid city overlap
+            if (pattern.strict && transcript.includes("i am from")) {
+                continue;
+            }
+            if (pattern.reverse) {
+                // Extract name before the phrase
+                name = transcript.substring(0, index).trim();
+                // If there's an "and" before, trim everything before "and"
+                const andIndex = name.lastIndexOf("and");
+                if (andIndex !== -1) {
+                    name = name.substring(andIndex + 3).trim();
+                }
+            } else {
+                // Extract name after the phrase
+                const nextIndex = transcript.indexOf(" and ", index) !== -1 ? transcript.indexOf(" and ", index) : Infinity;
+                name = transcript.substring(index + pattern.offset, nextIndex === Infinity ? undefined : nextIndex).trim();
+            }
+            name = name.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+            break;
+        }
+    }
+
+    if (name && name.length >= 2 && /^[a-zA-Z\s]+$/.test(name)) {
+        document.getElementById('name').value = name;
+        document.getElementById('name').classList.remove('invalid');
+        document.getElementById('name').classList.add('valid');
+        feedback.push(`Name set to ${name}`);
+    } else if (name) {
+        document.getElementById('name').classList.add('invalid');
+        feedback.push("Invalid name. Use letters only, minimum 2 characters.");
+    }
+
+    // City: Check for city-related phrases
+    let city = "";
+    const cityPatterns = [
+        { phrase: "i am from ", offset: 10 },
+        { phrase: "my city is ", offset: 11 },
+        { phrase: "my city ", offset: 8 },
+        { phrase: "city is ", offset: 8 },
+        { phrase: " is my city", offset: -11, reverse: true },
+        { phrase: "bhilwara city", offset: 0, prefix: "bhilwara" },
+        { phrase: "i live in ", offset: 10 },
+        { phrase: "my place is ", offset: 12 },
+        { phrase: "city ", offset: 5 }
+    ];
+
+    for (const pattern of cityPatterns) {
+        const index = pattern.reverse ? transcript.lastIndexOf(pattern.phrase) : transcript.indexOf(pattern.phrase);
+        if (index !== -1) {
+            console.log("City pattern matched:", pattern.phrase);
+            if (pattern.reverse) {
+                city = transcript.substring(0, index).trim();
+                // If there's an "and" before, trim everything before "and"
+                const andIndex = city.lastIndexOf("and");
+                if (andIndex !== -1) {
+                    city = city.substring(andIndex + 3).trim();
+                }
+            } else if (pattern.prefix) {
+                city = "Bhilwara";
+            } else {
+                // Extract city after the phrase, stop at "and" if present
+                const nextIndex = transcript.indexOf(" and ", index) !== -1 ? transcript.indexOf(" and ", index) : Infinity;
+                city = transcript.substring(index + pattern.offset, nextIndex === Infinity ? undefined : nextIndex).trim();
+            }
+            city = city.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+            break;
+        }
+    }
+
+    if (city && city.length >= 2 && /^[a-zA-Z\s]+$/.test(city.toLowerCase())) {
+        document.getElementById('city').value = city;
+        document.getElementById('city').classList.remove('invalid');
+        document.getElementById('city').classList.add('valid');
+        feedback.push(`City set to ${city}`);
+    } else if (city) {
+        document.getElementById('city').classList.add('invalid');
+        feedback.push("Invalid city. Use letters only, minimum 2 characters.");
+    }
+
+    // Phone: (unchanged)
+    let phone = "";
+    const phonePatterns = [
+        { phrase: "my phone number is ", offset: 19 },
+        { phrase: "my phone number ", offset: 16 },
+        { phrase: "hi my number is ", offset: 16 },
+        { phrase: "hi my phone number is ", offset: 22 },
+        { phrase: "hi my mobile number is ", offset: 23 },
+        { phrase: "my contact number is ", offset: 21 },
+        { phrase: "my mobile number ", offset: 17 },
+        { phrase: "my phone number: ", offset: 17 },
+        { phrase: "my mobile number is ", offset: 20 },
+        { phrase: "my number’s ", offset: 12 },
+        { phrase: "phone number is ", offset: 16 },
+        { phrase: "number is ", offset: 10 },
+        { phrase: " is my phone number", offset: -19, reverse: true },
+        { phrase: " is my number", offset: -13, reverse: true },
+        { phrase: " is my mobile number", offset: -20, reverse: true }
+    ];
+
+    for (const pattern of phonePatterns) {
+        const index = pattern.reverse ? transcript.lastIndexOf(pattern.phrase) : transcript.indexOf(pattern.phrase);
+        if (index !== -1) {
+            if (pattern.reverse) {
+                const beforePhrase = transcript.substring(0, index).trim();
+                const digits = beforePhrase.match(/\d/g);
+                if (digits && digits.length >= 10) {
+                    phone = digits.join("").slice(0, 10);
+                } else {
+                    const tenDigitMatch = beforePhrase.match(/\d{10}/);
+                    if (tenDigitMatch) {
+                        phone = tenDigitMatch[0];
+                    }
+                }
+            } else {
+                const nextIndex = Infinity;
+                const phoneSegment = transcript.substring(index + pattern.offset, nextIndex === Infinity ? undefined : nextIndex).trim();
+                const phoneMatch = phoneSegment.match(/\d+/g);
+                if (phoneMatch) {
+                    phone = phoneMatch.join("");
+                    if (phone.length > 10) phone = phone.slice(0, 10);
+                }
+            }
+            break;
+        }
+    }
+
+    if (phone && phone.length === 10 && /^\d{10}$/.test(phone)) {
+        document.getElementById('phone').value = phone;
+        document.getElementById('phone').classList.remove('invalid');
+        document.getElementById('phone').classList.add('valid');
+        feedback.push(`Phone number set to ${phone}`);
+    } else if (phone) {
+        document.getElementById('phone').classList.add('invalid');
+        feedback.push(`Invalid phone number: "${phone}". Must be exactly 10 digits.`);
+    }
+
+    // Email: (unchanged)
+    let email = "";
+    const emailPatterns = [
+        { phrase: "my email address is ", offset: 20 },
+        { phrase: "my email is ", offset: 12 },
+        { phrase: "my contact email is ", offset: 20 },
+        { phrase: "my email id is ", offset: 14 },
+        { phrase: "email id is ", offset: 12 },
+        { phrase: "email address is ", offset: 17 },
+        { phrase: "email is ", offset: 9 },
+        { phrase: " is my email address", offset: -20, reverse: true },
+        { phrase: " is email address", offset: -17, reverse: true },
+        { phrase: " is my email id", offset: -15, reverse: true },
+        { phrase: " is email id", offset: -12, reverse: true },
+        { phrase: " is my email", offset: -12, reverse: true },
+        { phrase: " is email", offset: -9, reverse: true },
+        { phrase: "email ", offset: 6 },
+        { phrase: " email", offset: -6, reverse: true }
+    ];
+
+    for (const pattern of emailPatterns) {
+        const index = pattern.reverse ? transcript.lastIndexOf(pattern.phrase) : transcript.indexOf(pattern.phrase);
+        if (index !== -1) {
+            if (pattern.reverse) {
+                email = transcript.substring(0, index).trim();
+            } else {
+                const nextIndex = Infinity;
+                email = transcript.substring(index + pattern.offset, nextIndex === Infinity ? undefined : nextIndex).trim();
+            }
+            email = email.replace(/\s/g, "").replace("at", "@").replace("dot", ".").replace(/\.com.+$/, ".com");
+            break;
+        }
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && emailRegex.test(email)) {
+        document.getElementById('email').value = email;
+        document.getElementById('email').classList.remove('invalid');
+        document.getElementById('email').classList.add('valid');
+        feedback.push(`Email set to ${email}`);
+    } else if (email) {
+        document.getElementById('email').classList.add('invalid');
+        feedback.push("Invalid email. Must include '@' and a domain.");
+    }
+
+    // Provide combined feedback
+    if (feedback.length > 0) {
+        speakFeedback(feedback.join(", "));
+    } else {
+        status.textContent = "No valid details recognized. Please try again.";
+        speakFeedback("No valid details recognized. Please try again.");
+    }
+}
+    function speakFeedback(message) {
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function validateForm(event) {
+        event.preventDefault();
+        const inputs = document.querySelectorAll('input');
+        let isValid = true;
+
+        inputs.forEach(input => {
+            const value = input.value.trim();
+            if (!value) {
+                isValid = false;
+                input.classList.add('invalid');
+                return;
+            }
+
+            if (input.id === 'name' && !/^[a-zA-Z\s]{2,}$/.test(value)) {
+                isValid = false;
+                input.classList.add('invalid');
+            } else if (input.id === 'phone' && !/^\d{10}$/.test(value)) {
+                isValid = false;
+                input.classList.add('invalid');
+            } else if (input.id === 'city' && !/^[a-zA-Z\s]{2,}$/.test(value)) {
+                isValid = false;
+                input.classList.add('invalid');
+            } else if (input.id === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                isValid = false;
+                input.classList.add('invalid');
+            } else {
+                input.classList.remove('invalid');
+                input.classList.add('valid');
+            }
+        });
+
+        if (isValid) {
+            alert('Registration submitted successfully!');
+            document.getElementById('userForm').reset();
+            inputs.forEach(input => input.classList.remove('valid'));
+            status.textContent = "Tap the microphone to start";
+        } else {
+            status.textContent = "Please complete all fields correctly.";
+        }   
+        return false;
+    }
+</script>
+</body>
+</html>
